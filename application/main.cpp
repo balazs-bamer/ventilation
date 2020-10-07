@@ -1,0 +1,25 @@
+/*
+ * main.cpp
+ *
+ *  Created on: Sep 30, 2020
+ *      Author: balazs
+ */
+
+#include "display.h"
+#include "measure.h"
+#include "control.h"
+
+
+extern "C" void systemTickUserCallback() {
+	Display::refreshNotify();
+	Tick::tick();
+}
+
+extern "C" void loop() {
+	while(true) {
+	    Display::wait();
+	    Measure::step();
+	    Control::step(Measure::getTemperatures());
+	    Display::setContent(Measure::getDisplayContent());
+	}
+}
