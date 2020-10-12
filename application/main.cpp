@@ -18,7 +18,7 @@ extern "C" void systemTickUserCallback() {
 extern "C" void loop() {
 	while(true) {
 	    Display::wait();
-	    Measure::step();
+	    Measure::step();           // This may last long when I2Ctransfer occurs
 	    Control::step(Measure::getTemperatures());
 	    Display::setContent(Measure::getDisplayContent());
 	}

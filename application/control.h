@@ -23,7 +23,7 @@ private:
     inline static GPIO_TypeDef     *sMotorPort    = motor_GPIO_Port;
 
 public:
-    static void step(Temperatures const aTemperatures) {
+    static void step(Temperatures const aTemperatures) noexcept {
     	HAL_IWDG_Refresh(&hiwdg);
     }
 };
