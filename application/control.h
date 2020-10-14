@@ -110,7 +110,7 @@ private:
 		sMotorOnDays <<= 1u;
 		int32_t motorOnInDay = 0;
 		for(uint32_t i = 0u; i < static_cast<uint32_t>(cHoursPerDay); ++i) {
-			motorOnInDay += (sMotorOnHours >> i > 0u ? 1 : 0);
+			motorOnInDay += (((sMotorOnHours >> i) & 1u) > 0u ? 1 : 0);
 		}
 		sMotorOnDays |= (motorOnInDay >= cMotorOnHoursToConsider ? 1u : 0u );
 	}
