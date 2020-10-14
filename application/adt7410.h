@@ -2,9 +2,10 @@
 #define ADT6410_H
 
 #include "stm32f1xx_hal.h"
+#include "thermometer.h"
 #include <limits>
 
-class Adt7410 final {
+class Adt7410 final : public Thermometer {
 private:
   static constexpr uint8_t  cI2cAddressHigh    = 0x48;
   static constexpr uint8_t  cI2cAddressLowMask = 0x03;
@@ -21,8 +22,6 @@ private:
   uint32_t const            cI2cTimeout;
 
 public:
-  static constexpr int8_t  cTempIllegal = -128;
-
   Adt7410(I2C_HandleTypeDef *aI2cHandle, uint8_t const aI2cAddress, uint32_t const aI2cTimeout) noexcept
     : mI2cHandle(aI2cHandle)
     , cI2cAddress(static_cast<uint8_t>((cI2cAddressHigh | (aI2cAddress & cI2cAddressLowMask)) << cI2cAddressShift))

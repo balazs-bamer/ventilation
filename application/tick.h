@@ -11,12 +11,13 @@
 
 class Tick {
 protected:
-	static constexpr uint32_t       csTicksPerSec = 1000u;
-	inline static uint32_t          sCountTicks   =    0u;
+	static constexpr uint32_t cTicksPerSec     = 1000u;
+
+	inline static uint32_t sCountTicks = 0u;
 
 public:
-	static void tick() {
-		if(++sCountTicks == csTicksPerSec) {
+	static void tick() noexcept {
+		if(++sCountTicks == cTicksPerSec) {
 			sCountTicks = 0u;
 		}
 		else { // nothing to do

@@ -80,19 +80,19 @@ private:
 	inline static std::atomic<bool>     sSemaphore    = false;
 
 public:
-	static void wait() {
+	static void wait() noexcept {
 		while(!sSemaphore) { // busy wait, we have enough power
 		}
 		sSemaphore = false;
 	}
 
-	static void setContent(DisplayContent const aContent) {
+	static void setContent(DisplayContent const aContent) noexcept {
 		sValue = aContent.mTemperature;
 		sVerticals = aContent.mVerticals;
 		sHorizontals = aContent.mHorizontals;
 	}
 
-	static void refreshNotify() {
+	static void refreshNotify() noexcept {
 	    uint32_t currentSegmentBsrr = csEmptyDigitBsrr;
 	    if(sCurrentDigit < csValueEnd) {
 	        int32_t value = sValue;
@@ -139,7 +139,7 @@ public:
 	}
 
 private:
-	static constexpr uint32_t power(uint32_t const aExponent) {
+	static constexpr uint32_t power(uint32_t const aExponent) noexcept {
 	    uint32_t result = 1u;
 	    for(uint32_t i = 0; i < aExponent; ++i) {
 	        result *= csNumericSystem;
