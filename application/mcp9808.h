@@ -5,6 +5,7 @@
 #include "thermometer.h"
 #include <limits>
 
+
 class Mcp9808 final : public Thermometer {
 private:
     static constexpr uint8_t  cI2cAddressHigh    = 0x18u;

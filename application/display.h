@@ -70,8 +70,8 @@ private:
         (graphics5_Pin << csBsrrResetShift) | (graphics5_Pin ^ csDigitMask)
 	};
 
-	inline static GPIO_TypeDef* sSegmentPort = segment_a_GPIO_Port;
-	inline static GPIO_TypeDef* sDigitPort   = digit0_GPIO_Port;
+	inline static GPIO_TypeDef *sSegmentPort = segment_a_GPIO_Port;
+	inline static GPIO_TypeDef *sDigitPort   = digit0_GPIO_Port;
 
 	inline static std::atomic<int32_t>  sValue;
 	inline static std::atomic<uint32_t> sVerticals;

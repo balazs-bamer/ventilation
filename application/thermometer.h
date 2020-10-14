@@ -11,7 +11,7 @@
 
 class Thermometer {
 public:
-	static constexpr int8_t  cTempIllegal = -128;
+	static constexpr int8_t cTempIllegal = -128;
 };
 
 #endif /* THERMOMETER_H_ */

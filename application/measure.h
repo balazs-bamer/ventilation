@@ -33,10 +33,10 @@ struct Temperatures final {
 /// or if there are more, their average.
 class Filter final {
 private:
-	static constexpr int8_t cTempMinimal       = -40;
-	static constexpr int8_t cTempMaximal       =  80;
-	static constexpr int8_t cSampleCountsSize  = cTempMaximal - cTempMinimal + 1;
-	static constexpr size_t cMaxQueueSize      = std::numeric_limits<uint8_t>::max();
+	static constexpr int8_t cTempMinimal      = -40;
+	static constexpr int8_t cTempMaximal      =  80;
+	static constexpr int8_t cSampleCountsSize = cTempMaximal - cTempMinimal + 1;
+	static constexpr size_t cMaxQueueSize     = std::numeric_limits<uint8_t>::max();
 
 	std::array<uint8_t, cSampleCountsSize> mSampleCounts;
 	std::array<int8_t, cMaxQueueSize> mQueue;

@@ -11,9 +11,9 @@
 
 class Tick {
 protected:
-	static constexpr uint32_t cTicksPerSec     = 1000u;
+	static constexpr int32_t cTicksPerSec = 1000u;
 
-	inline static uint32_t sCountTicks = 0u;
+	inline static int32_t sCountTicks = 0u;
 
 public:
 	static void tick() noexcept {

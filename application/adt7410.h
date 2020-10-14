@@ -5,6 +5,7 @@
 #include "thermometer.h"
 #include <limits>
 
+
 class Adt7410 final : public Thermometer {
 private:
   static constexpr uint8_t  cI2cAddressHigh    = 0x48;
