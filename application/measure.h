@@ -33,27 +33,39 @@ struct Temperatures final {
 /// or if there are more, their average.
 class Filter final {
 private:
+	static constexpr size_t cMaxBadInChain    =  4u; //40u;
 	static constexpr int8_t cTempMinimal      = -40;
 	static constexpr int8_t cTempMaximal      =  80;
 	static constexpr int8_t cSampleCountsSize = cTempMaximal - cTempMinimal + 1;
-	static constexpr size_t cMaxQueueSize     = std::numeric_limits<uint8_t>::max();
+	static constexpr size_t cMaxQueueSize     = 11u; // std::numeric_limits<uint8_t>::max();
 
 	std::array<uint8_t, cSampleCountsSize> mSampleCounts;
 	std::array<int8_t, cMaxQueueSize> mQueue;
 	size_t mQueueNextPush = 0u;
 	size_t mQueueNextPop  = 0u;
 	size_t mQueueSize     = 0u;
+	size_t mBadInChain    = 0u;
+	bool   mError         = false;
 
 public:
-	Filter() {
+	Filter() noexcept {
 		std::fill(mSampleCounts.begin(), mSampleCounts.end(), 0u);
 	}
 
-	void nextSample(int8_t const aValue) {
+	void nextSample(int8_t const aValue) noexcept {
 		if(aValue >= cTempMinimal && aValue <= cTempMaximal) {
+			if(mBadInChain == cMaxBadInChain) {
+				mQueueNextPush = 0u;
+				mQueueNextPop  = 0u;
+				mQueueSize     = 0u;
+			}
+			else { // nothing to do
+			}
+			mBadInChain = 0u;
 			if(mQueueSize == cMaxQueueSize) {
 				--mSampleCounts[mQueue[mQueueNextPop] - cTempMinimal];
 				mQueueNextPop = (mQueueNextPop + 1u) % cMaxQueueSize;
+				mError = false;
 			}
 			else {
 				++mQueueSize;
@@ -62,11 +74,17 @@ public:
 			mQueue[mQueueNextPush] = aValue;
 			mQueueNextPush = (mQueueNextPush + 1u) % cMaxQueueSize;
 		}
-		else { // nothing to do
+		else {
+			if(mBadInChain < cMaxBadInChain) {
+				++mBadInChain;
+			}
+			else {
+				mError = true;
+			}
 		}
 	}
 
-	int8_t getFilteredValue() const {
+	int8_t getFilteredValue() const noexcept {
 		int8_t result;
 		if(mQueueSize == cMaxQueueSize) {
 			int32_t maxCountCount = 0;
@@ -86,6 +104,10 @@ public:
 			result = Thermometer::cTempIllegal;
 		}
 		return result;
+	}
+
+	bool getError() const noexcept {
+		return mError;
 	}
 };
 
@@ -122,6 +144,10 @@ public:
 
     static Temperatures const & getTemperatures() noexcept {
     	return sTemperatures;
+    }
+
+    static Errors getErrors() noexcept {
+    	return Errors { mInner: sFilterInt.getError(), mOuter: sFilterExt.getError() };
     }
 
 private:

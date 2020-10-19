@@ -21,8 +21,8 @@ extern IWDG_HandleTypeDef hiwdg;
 class Control final : public Tick {
 private:
 	static constexpr int32_t       cMotorOnHoursToConsider =    2;
-	static constexpr int32_t       cHoursPerDay            =   24;
-	static constexpr int32_t       cSecondsPerHour         = 3600;
+	static constexpr int32_t       cHoursPerDay            = 10; //  24;
+	static constexpr int32_t       cSecondsPerHour         = 10; //3600;
 	static constexpr int32_t       cSecondsPerHalfAnHour   = cSecondsPerHour / 2;
 	static constexpr int32_t       cDisplayOuterEndTick    =  333;
 	static constexpr int8_t        cFreeze                 =    0;

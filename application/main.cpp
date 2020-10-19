@@ -20,7 +20,13 @@ extern "C" void loop() {
 	while(true) {
 	    Display::wait();
 	    Measure::step();          // This may last long when I2Ctransfer occurs
-	    Control::step(Measure::getTemperatures());
-	    Display::setContent(Control::getDisplayContent());
+	    Errors errors = Measure::getErrors();
+	    if(errors.mInner || errors.mOuter) {
+	    	Display::setContent(errors);
+	    }
+	    else {
+	    	Control::step(Measure::getTemperatures());
+	    	Display::setContent(Control::getDisplayContent());
+		}
 	}
 }

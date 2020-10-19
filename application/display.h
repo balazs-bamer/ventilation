@@ -11,6 +11,7 @@
 
 #include <array>
 #include <atomic>
+#include <limits>
 #include "main.h"
 
 
@@ -18,6 +19,11 @@ struct DisplayContent final {
 	uint16_t mVerticals;
 	int8_t   mTemperature;
 	uint8_t  mHorizontals;
+};
+
+struct Errors final {
+	bool mInner;
+	bool mOuter;
 };
 
 class Display final {
@@ -36,8 +42,12 @@ private:
 	static constexpr uint32_t    csVerticalBitMask   =  (1u << csVerticalExponent) - 1u;
 	static constexpr uint32_t    csHorizontalBitMask =  1u;
 	static constexpr uint32_t    csInvalidDigitBsrr  = (segment_g_Pin << csBsrrResetShift) | (segment_g_Pin ^ csSegmentMask);
+	static constexpr uint32_t    csErrorLocIntBsrr   = ((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask); // Hungarian letter b
+	static constexpr uint32_t    csErrorLocExtBsrr   = ((segment_c_Pin | segment_d_Pin | segment_e_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_d_Pin | segment_e_Pin) ^ csSegmentMask); // Hungarian letter u
 	static constexpr uint32_t    csMinusSignBsrr     = csInvalidDigitBsrr;
 	static constexpr uint32_t    csEmptyDigitBsrr    = csSegmentMask;
+	static constexpr uint32_t    csErrorLetterCount  =  4u;
+	static constexpr int32_t     csIllegalValue      = std::numeric_limits<int32_t>::max();
 
 	inline static constexpr std::array<uint32_t, 1u << csVerticalExponent>  csVerticalSegments = {
 	    0u,
@@ -59,6 +69,15 @@ private:
         ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask)
 	};
 
+	inline static constexpr std::array<uint32_t, csGraphicsEnd - csGraphicsBegin>  csErrorSegmentsBsrr = {
+		((segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
+		(segment_e_Pin << csBsrrResetShift) | (segment_e_Pin ^ csSegmentMask),
+		((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
+		((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
+		csEmptyDigitBsrr,
+		csEmptyDigitBsrr
+	};
+
 	inline static constexpr std::array<uint32_t, csDigitCount>  csDigitsBsrr = {
         (digit0_Pin << csBsrrResetShift) | (digit0_Pin ^ csDigitMask),
         (digit1_Pin << csBsrrResetShift) | (digit1_Pin ^ csDigitMask),
@@ -73,9 +92,11 @@ private:
 	inline static GPIO_TypeDef *sSegmentPort = segment_a_GPIO_Port;
 	inline static GPIO_TypeDef *sDigitPort   = digit0_GPIO_Port;
 
-	inline static std::atomic<int32_t>  sValue;
-	inline static std::atomic<uint32_t> sVerticals;
-	inline static std::atomic<uint32_t> sHorizontals;
+	inline static std::atomic<bool>     sErrorInt     = false;
+	inline static std::atomic<bool>     sErrorExt     = false;
+	inline static std::atomic<int32_t>  sValue        = csIllegalValue;
+	inline static std::atomic<uint32_t> sVerticals    = 0u;
+	inline static std::atomic<uint32_t> sHorizontals  = 0u;
 	inline static uint32_t              sCurrentDigit = 0u;
 	inline static std::atomic<bool>     sSemaphore    = false;
 
@@ -90,9 +111,46 @@ public:
 		sValue = aContent.mTemperature;
 		sVerticals = aContent.mVerticals;
 		sHorizontals = aContent.mHorizontals;
+		sErrorInt = false;
+		sErrorExt = false;
+	}
+
+	static void setContent(Errors const aContent) noexcept {
+		sErrorInt = aContent.mInner;
+		sErrorExt = aContent.mOuter;
 	}
 
 	static void refreshNotify() noexcept {
+		if(sErrorInt || sErrorExt) {
+			refreshError();
+		}
+		else {
+			refreshNormal();
+		}
+	    sCurrentDigit = (sCurrentDigit + 1u) % csDigitCount;
+	    sSemaphore = true;
+	}
+
+private:
+	static void refreshError() noexcept {
+		uint32_t currentSegmentBsrr;
+		if(sCurrentDigit == 0u && sErrorInt) {
+			currentSegmentBsrr = csErrorLocIntBsrr;
+		}
+		else if(sCurrentDigit == 1u && sErrorExt) {
+			currentSegmentBsrr = csErrorLocExtBsrr;
+		}
+		else if(sCurrentDigit >= csGraphicsBegin) {
+			currentSegmentBsrr = csErrorSegmentsBsrr[sCurrentDigit - csGraphicsBegin];
+		}
+		else {
+			currentSegmentBsrr = csEmptyDigitBsrr;
+		}
+		sSegmentPort->BSRR = currentSegmentBsrr;
+	    sDigitPort->BSRR = csDigitsBsrr[sCurrentDigit];
+	}
+
+	static void refreshNormal() noexcept {
 	    uint32_t currentSegmentBsrr = csEmptyDigitBsrr;
 	    if(sCurrentDigit < csValueEnd) {
 	        int32_t value = sValue;
@@ -134,11 +192,8 @@ public:
 	    }
 	    sSegmentPort->BSRR = currentSegmentBsrr;
 	    sDigitPort->BSRR = csDigitsBsrr[sCurrentDigit];
-	    sCurrentDigit = (sCurrentDigit + 1u) % csDigitCount;
-	    sSemaphore = true;
 	}
 
-private:
 	static constexpr uint32_t power(uint32_t const aExponent) noexcept {
 	    uint32_t result = 1u;
 	    for(uint32_t i = 0; i < aExponent; ++i) {
