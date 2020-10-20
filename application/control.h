@@ -21,8 +21,8 @@ extern IWDG_HandleTypeDef hiwdg;
 class Control final : public Tick {
 private:
 	static constexpr int32_t       cMotorOnHoursToConsider =    2;
-	static constexpr int32_t       cHoursPerDay            = 10; //  24;
-	static constexpr int32_t       cSecondsPerHour         = 10; //3600;
+	static constexpr int32_t       cHoursPerDay            =   24;
+	static constexpr int32_t       cSecondsPerHour         = 3600;
 	static constexpr int32_t       cSecondsPerHalfAnHour   = cSecondsPerHour / 2;
 	static constexpr int32_t       cDisplayOuterEndTick    =  333;
 	static constexpr int8_t        cFreeze                 =    0;
@@ -50,7 +50,9 @@ public:
 
     static void step(Temperatures const & aTemperatures) noexcept {
     	sTemperatures = aTemperatures;
-    	if(sTemperatures.mOuter < cFreeze) {
+    	if(sTemperatures.mOuter < cFreeze
+    	 || sTemperatures.mOuter == Thermometer::cTempIllegal
+    	 || sTemperatures.mInner == Thermometer::cTempIllegal) {
     		setOutput(cMotorOff);
     	}
     	else if(sTemperatures.mInner >= sTemperatures.mOuter + cHysteresis){

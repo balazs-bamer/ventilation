@@ -33,11 +33,11 @@ struct Temperatures final {
 /// or if there are more, their average.
 class Filter final {
 private:
-	static constexpr size_t cMaxBadInChain    =  4u; //40u;
+	static constexpr size_t cMaxBadInChain    =  40u;
 	static constexpr int8_t cTempMinimal      = -40;
 	static constexpr int8_t cTempMaximal      =  80;
 	static constexpr int8_t cSampleCountsSize = cTempMaximal - cTempMinimal + 1;
-	static constexpr size_t cMaxQueueSize     = 11u; // std::numeric_limits<uint8_t>::max();
+	static constexpr size_t cMaxQueueSize     = std::numeric_limits<uint8_t>::max();
 
 	std::array<uint8_t, cSampleCountsSize> mSampleCounts;
 	std::array<int8_t, cMaxQueueSize> mQueue;
@@ -58,6 +58,7 @@ public:
 				mQueueNextPush = 0u;
 				mQueueNextPop  = 0u;
 				mQueueSize     = 0u;
+				std::fill(mSampleCounts.begin(), mSampleCounts.end(), 0u);
 			}
 			else { // nothing to do
 			}
@@ -86,7 +87,7 @@ public:
 
 	int8_t getFilteredValue() const noexcept {
 		int8_t result;
-		if(mQueueSize == cMaxQueueSize) {
+		if(!mError && mQueueSize == cMaxQueueSize) {
 			int32_t maxCountCount = 0;
 			uint8_t maxCount = *std::max_element(mSampleCounts.begin(), mSampleCounts.end());
 			int32_t sum = 0;

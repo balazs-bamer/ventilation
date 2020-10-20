@@ -26,10 +26,25 @@ struct Errors final {
 	bool mOuter;
 };
 
-class Display final {
+class BsrrCalculation {
+private:
+	static constexpr uint32_t    csSegmentMask       = segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin;
+	static constexpr uint32_t    csDigitMask         = digit0_Pin | digit1_Pin | graphics0_Pin | graphics1_Pin | graphics2_Pin | graphics3_Pin | graphics4_Pin | graphics5_Pin;
+    static constexpr uint32_t    csBsrrResetShift    = 16u;
+
+protected:
+	static constexpr uint32_t getBsrrSegment(uint32_t const aSegments) noexcept {
+		return (aSegments << csBsrrResetShift) | (aSegments ^ csSegmentMask);
+	}
+
+	static constexpr uint32_t getBsrrDigit(uint32_t const aDigit) noexcept {
+		return (aDigit << csBsrrResetShift) | (aDigit ^ csDigitMask);
+	}
+};
+
+class Display final : public BsrrCalculation {
 private:
     static constexpr uint32_t    csNumericSystem     = 10u;
-    static constexpr uint32_t    csBsrrResetShift    = 16u;
     static constexpr uint32_t    csDigitCount        =  8u;
 	static constexpr uint32_t    csValueBegin        =  0u;
 	static constexpr uint32_t    csValueEnd          =  2u;
@@ -37,15 +52,13 @@ private:
 	static constexpr uint32_t    csGraphicsEnd       = csDigitCount;
 	static constexpr uint32_t    csVerticalExponent  =  2u;
 	static constexpr uint32_t    csHorizontalSegment = segment_d_Pin;
-	static constexpr uint32_t    csSegmentMask       = segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin;
-	static constexpr uint32_t    csDigitMask         = digit0_Pin | digit1_Pin | graphics0_Pin | graphics1_Pin | graphics2_Pin | graphics3_Pin | graphics4_Pin | graphics5_Pin;
 	static constexpr uint32_t    csVerticalBitMask   =  (1u << csVerticalExponent) - 1u;
 	static constexpr uint32_t    csHorizontalBitMask =  1u;
-	static constexpr uint32_t    csInvalidDigitBsrr  = (segment_g_Pin << csBsrrResetShift) | (segment_g_Pin ^ csSegmentMask);
-	static constexpr uint32_t    csErrorLocIntBsrr   = ((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask); // Hungarian letter b
-	static constexpr uint32_t    csErrorLocExtBsrr   = ((segment_c_Pin | segment_d_Pin | segment_e_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_d_Pin | segment_e_Pin) ^ csSegmentMask); // Hungarian letter u
+	static constexpr uint32_t    csInvalidDigitBsrr  = getBsrrSegment(segment_g_Pin);
+	static constexpr uint32_t    csErrorLocIntBsrr   = getBsrrSegment(segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin); // Hungarian letter b
+	static constexpr uint32_t    csErrorLocExtBsrr   = getBsrrSegment(segment_c_Pin | segment_d_Pin | segment_e_Pin); // Hungarian letter u
 	static constexpr uint32_t    csMinusSignBsrr     = csInvalidDigitBsrr;
-	static constexpr uint32_t    csEmptyDigitBsrr    = csSegmentMask;
+	static constexpr uint32_t    csEmptyDigitBsrr    = getBsrrSegment(0u);
 	static constexpr uint32_t    csErrorLetterCount  =  4u;
 	static constexpr int32_t     csIllegalValue      = std::numeric_limits<int32_t>::max();
 
@@ -57,36 +70,36 @@ private:
 	};
 
 	inline static constexpr std::array<uint32_t, csNumericSystem>  csDigitSegmentsBsrr = {
-        ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin) ^ csSegmentMask),
-        ((segment_b_Pin | segment_c_Pin) << csBsrrResetShift) | ((segment_b_Pin | segment_c_Pin) ^ csSegmentMask),
-        ((segment_a_Pin | segment_b_Pin | segment_d_Pin | segment_e_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_d_Pin | segment_e_Pin | segment_g_Pin) ^ csSegmentMask),
-        ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_g_Pin) ^ csSegmentMask),
-        ((segment_b_Pin | segment_c_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_b_Pin | segment_c_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
-        ((segment_a_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
-        ((segment_a_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin |segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin |segment_g_Pin) ^ csSegmentMask),
-        ((segment_a_Pin | segment_b_Pin | segment_c_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin) ^ csSegmentMask),
-        ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
-        ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask)
+		getBsrrSegment(segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin),
+		getBsrrSegment(segment_b_Pin | segment_c_Pin),
+		getBsrrSegment(segment_a_Pin | segment_b_Pin | segment_d_Pin | segment_e_Pin | segment_g_Pin),
+		getBsrrSegment(segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_g_Pin),
+		getBsrrSegment(segment_b_Pin | segment_c_Pin | segment_f_Pin | segment_g_Pin),
+		getBsrrSegment(segment_a_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin),
+		getBsrrSegment(segment_a_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin |segment_g_Pin),
+		getBsrrSegment(segment_a_Pin | segment_b_Pin | segment_c_Pin),
+		getBsrrSegment(segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin),
+		getBsrrSegment(segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_d_Pin | segment_f_Pin | segment_g_Pin)
 	};
 
 	inline static constexpr std::array<uint32_t, csGraphicsEnd - csGraphicsBegin>  csErrorSegmentsBsrr = {
-		((segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
-		(segment_e_Pin << csBsrrResetShift) | (segment_e_Pin ^ csSegmentMask),
-		((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
-		((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) << csBsrrResetShift) | ((segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin) ^ csSegmentMask),
+		getBsrrSegment(segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin),
+		getBsrrSegment(segment_e_Pin),
+		getBsrrSegment(segment_c_Pin | segment_d_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin),
+		getBsrrSegment(segment_a_Pin | segment_b_Pin | segment_c_Pin | segment_e_Pin | segment_f_Pin | segment_g_Pin),
 		csEmptyDigitBsrr,
 		csEmptyDigitBsrr
 	};
 
 	inline static constexpr std::array<uint32_t, csDigitCount>  csDigitsBsrr = {
-        (digit0_Pin << csBsrrResetShift) | (digit0_Pin ^ csDigitMask),
-        (digit1_Pin << csBsrrResetShift) | (digit1_Pin ^ csDigitMask),
-        (graphics0_Pin << csBsrrResetShift) | (graphics0_Pin ^ csDigitMask),
-        (graphics1_Pin << csBsrrResetShift) | (graphics1_Pin ^ csDigitMask),
-        (graphics2_Pin << csBsrrResetShift) | (graphics2_Pin ^ csDigitMask),
-        (graphics3_Pin << csBsrrResetShift) | (graphics3_Pin ^ csDigitMask),
-        (graphics4_Pin << csBsrrResetShift) | (graphics4_Pin ^ csDigitMask),
-        (graphics5_Pin << csBsrrResetShift) | (graphics5_Pin ^ csDigitMask)
+		getBsrrDigit(digit0_Pin),
+		getBsrrDigit(digit1_Pin),
+		getBsrrDigit(graphics0_Pin),
+		getBsrrDigit(graphics1_Pin),
+		getBsrrDigit(graphics2_Pin),
+		getBsrrDigit(graphics3_Pin),
+		getBsrrDigit(graphics4_Pin),
+		getBsrrDigit(graphics5_Pin)
 	};
 
 	inline static GPIO_TypeDef *sSegmentPort = segment_a_GPIO_Port;
@@ -188,7 +201,7 @@ private:
 	        auto graphicDigit = sCurrentDigit - csGraphicsBegin;
 	        uint32_t currentSegmentPins = csVerticalSegments[(sVerticals >> (graphicDigit * csVerticalExponent)) & csVerticalBitMask];
 	        currentSegmentPins |= (((sHorizontals >> graphicDigit) & csHorizontalBitMask) == csHorizontalBitMask ? csHorizontalSegment : 0u);
-	        currentSegmentBsrr = (currentSegmentPins << csBsrrResetShift) | (currentSegmentPins ^ csSegmentMask);
+	        currentSegmentBsrr = getBsrrSegment(currentSegmentPins);
 	    }
 	    sSegmentPort->BSRR = currentSegmentBsrr;
 	    sDigitPort->BSRR = csDigitsBsrr[sCurrentDigit];
@@ -201,7 +214,6 @@ private:
 	    }
 	    return result;
 	}
-
 };
 
 #endif /* DISPLAY_H_ */
