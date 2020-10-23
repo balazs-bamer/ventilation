@@ -29,13 +29,14 @@ struct Temperatures final {
 };
 
 /// This filter expects extreme slow temperature changes and measurements
-/// transfer errors. So it considers only the majority value over a long sliding window,
+/// transfer errors. So it considers only the mode value over a long sliding window,
 /// or if there are more, their average.
+/// I restrict the temperature range to a smallest minimum so that more transfer errors can be spotted.
 class Filter final {
 private:
 	static constexpr size_t cMaxBadInChain    =  40u;
-	static constexpr int8_t cTempMinimal      = -40;
-	static constexpr int8_t cTempMaximal      =  80;
+	static constexpr int8_t cTempMinimal      = -20;
+	static constexpr int8_t cTempMaximal      =  50;
 	static constexpr int8_t cSampleCountsSize = cTempMaximal - cTempMinimal + 1;
 	static constexpr size_t cMaxQueueSize     = std::numeric_limits<uint8_t>::max();
 
